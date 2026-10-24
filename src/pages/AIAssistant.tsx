@@ -194,7 +194,13 @@ export default function AIAssistantPage() {
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected request error occurred.';
-      const setupGuidance = import.meta.env.DEV
+      const invalidGeminiKey = errorMessage.includes('GEMINI_API_KEY_INVALID')
+        || errorMessage.includes('Google rejected the Gemini API key');
+      const setupGuidance = invalidGeminiKey
+        ? import.meta.env.DEV
+          ? 'Create a Gemini API key in Google AI Studio (not an OAuth/access token), update backend/.env, then restart the backend.'
+          : 'Create a Gemini API key in Google AI Studio (not an OAuth/access token), replace GEMINI_API_KEY in Vercel Project Settings, then redeploy.'
+        : import.meta.env.DEV
         ? 'Make sure the backend server is running: cd backend && npm run dev'
         : 'Check GEMINI_API_KEY in Vercel Project Settings → Environment Variables, then redeploy.';
       const errorMsg: AIMessage = {

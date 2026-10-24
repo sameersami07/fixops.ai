@@ -71,9 +71,12 @@ Return only the JSON object without markdown.`;
       : 'Unknown upstream error';
     console.error('Gemini diagnostic request failed.', { status, message });
 
-    if (status === 401 || status === 403) {
+    if (status === 401
+      || status === 403
+      || /API key not valid|API_KEY_INVALID|ACCESS_TOKEN_TYPE_UNSUPPORTED|UNAUTHENTICATED/i.test(message)) {
       return response.status(502).json({
-        error: 'Google rejected the configured Gemini API key. Replace GEMINI_API_KEY in Vercel Project Settings and redeploy.',
+        error: 'Google rejected the Gemini API key. Use an API key created in Google AI Studio (not an OAuth/access token), replace GEMINI_API_KEY in Vercel Project Settings, and redeploy.',
+        code: 'GEMINI_API_KEY_INVALID',
       });
     }
     if (status === 404) {

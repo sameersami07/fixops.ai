@@ -22,6 +22,14 @@ const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 const geminiConfigured = Boolean(GEMINI_API_KEY && GEMINI_API_KEY !== 'your-gemini-api-key-here');
 
+function isGeminiAuthenticationError(error) {
+  const status = error?.status ?? error?.response?.status;
+  const message = typeof error?.message === 'string' ? error.message : '';
+  return status === 401
+    || status === 403
+    || /API key not valid|API_KEY_INVALID|ACCESS_TOKEN_TYPE_UNSUPPORTED|UNAUTHENTICATED/i.test(message);
+}
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({
   origin: [
@@ -454,8 +462,19 @@ Be specific, practical, and safety-focused. Return ONLY valid JSON.`;
 
     res.json({ response: cleanText, isDemo: false });
   } catch (err) {
-    console.error('Gemini AI error:', err.message);
-    res.status(500).json({ error: 'AI service error: ' + err.message });
+    if (isGeminiAuthenticationError(err)) {
+      console.error('Gemini rejected the configured API credential.');
+      return res.status(502).json({
+        error: 'Google rejected the Gemini API key. Use an API key created in Google AI Studio (not an OAuth/access token), update the server environment, and restart the backend.',
+        code: 'GEMINI_API_KEY_INVALID',
+      });
+    }
+
+    console.error('Gemini diagnostic request failed.', err?.status ? `Upstream status: ${err.status}` : '');
+    return res.status(502).json({
+      error: 'Gemini could not complete the diagnostic. Check the backend logs for details.',
+      code: 'GEMINI_REQUEST_FAILED',
+    });
   }
 });
 
