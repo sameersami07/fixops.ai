@@ -193,9 +193,13 @@ export default function AIAssistantPage() {
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected request error occurred.';
+      const setupGuidance = import.meta.env.DEV
+        ? 'Make sure the backend server is running: cd backend && npm run dev'
+        : 'Check GEMINI_API_KEY in Vercel Project Settings → Environment Variables, then redeploy.';
       const errorMsg: AIMessage = {
         id: `msg-${Date.now()}-err`, role: 'assistant', timestamp: new Date(),
-        content: `❌ Error: ${(err as Error).message}\n\nMake sure the backend server is running: cd backend && npm run dev`,
+        content: `❌ Error: ${errorMessage}\n\n${setupGuidance}`,
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
