@@ -1,7 +1,7 @@
 import type { AuthUser } from '../types';
 
 // API Base URL - points to our Express backend
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
 // Get auth token from localStorage
 function getToken(): string | null {

@@ -40,6 +40,12 @@ Open <http://localhost:5173>. The backend health endpoint is <http://localhost:5
 
 The backend uses the local MongoDB database `fixops` by default. Set `MONGODB_URI` in `backend/.env` to use another database. If `GEMINI_API_KEY` is not configured, AI diagnostics run in demo mode.
 
+## Deploy to Vercel
+
+The Vercel deployment serves the React single-page app and provides same-origin `/api/health` and `/api/ai/diagnose` functions. In the Vercel project, add `GEMINI_API_KEY` under **Settings → Environment Variables** for Production (and Preview if needed), then redeploy. Never use a `VITE_` prefix for this secret.
+
+Production frontend requests use `/api` on the same Vercel origin; local development continues to use the Express backend at `http://localhost:5000/api`.
+
 ## Security
 
 - Never commit `.env` files or put API keys in frontend code.

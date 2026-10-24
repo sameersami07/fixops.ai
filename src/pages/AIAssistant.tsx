@@ -43,7 +43,7 @@ function AIResponseCard({ response, isDemo }: { response: AIResponse; isDemo?: b
       {isDemo ? (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-          <span className="text-xs text-amber-800">Demo Mode — Add your Gemini API key in backend/.env for real AI</span>
+          <span className="text-xs text-amber-800">Demo Mode — Configure GEMINI_API_KEY in your deployment environment for real AI</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
@@ -137,7 +137,7 @@ export default function AIAssistantPage() {
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: 'welcome', role: 'assistant', timestamp: new Date(),
-      content: "Hello! I'm the FixOps AI Maintenance Assistant powered by Google Gemini. Select equipment, describe the problem, and I'll provide expert diagnostic guidance.\n\n🔑 **API Key Setup**: Add your Gemini API key to backend/.env to enable real AI responses.",
+      content: "Hello! I'm the FixOps AI Maintenance Assistant powered by Google Gemini. Select equipment, describe the problem, and I'll provide expert diagnostic guidance.\n\n🔑 **API Key Setup**: Configure GEMINI_API_KEY in your backend environment to enable real AI responses.",
     }
   ]);
   const [selectedEquipment, setSelectedEquipment] = useState('');
@@ -289,7 +289,7 @@ export default function AIAssistantPage() {
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <p className="text-[10px] text-slate-600">Add to <span className="font-mono text-[9px] bg-slate-100 px-1 py-0.5 rounded">backend/.env</span>:<br />
+                <p className="text-[10px] text-slate-600">Set <span className="font-mono text-[9px] bg-slate-100 px-1 py-0.5 rounded">GEMINI_API_KEY</span> in your backend or Vercel environment variables:<br />
                   <span className="font-mono text-[9px] text-blue-700">GEMINI_API_KEY=your-key</span>
                 </p>
               </div>
@@ -396,7 +396,7 @@ export default function AIAssistantPage() {
             </div>
             <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
-              {backendStatus === 'configured' ? 'Gemini connected — Real AI active' : backendStatus === 'demo-mode' ? 'Demo mode — Configure GEMINI_API_KEY in backend/.env, then restart the backend' : backendStatus === 'offline' ? 'Backend offline — Start backend: cd backend && npm run dev' : 'Checking AI service status...'}
+              {backendStatus === 'configured' ? 'Gemini connected — Real AI active' : backendStatus === 'demo-mode' ? 'Demo mode — Configure GEMINI_API_KEY in your deployment environment' : backendStatus === 'offline' ? 'Backend offline — Check the API deployment and configuration' : 'Checking AI service status...'}
             </p>
           </div>
         </Card>
