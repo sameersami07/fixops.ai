@@ -3,6 +3,13 @@ import type { AuthUser } from '../types';
 // API Base URL - points to our Express backend
 const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
+class ApiRequestError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
 // Get auth token from localStorage
 function getToken(): string | null {
   const user = localStorage.getItem('fixops_user');
@@ -27,7 +34,10 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    throw new ApiRequestError(
+      typeof err.error === 'string' ? err.error : `HTTP ${res.status}`,
+      typeof err.code === 'string' ? err.code : undefined,
+    );
   }
   return res.json();
 }

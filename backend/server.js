@@ -27,7 +27,8 @@ function isGeminiAuthenticationError(error) {
   const message = typeof error?.message === 'string' ? error.message : '';
   return status === 401
     || status === 403
-    || /API key not valid|API_KEY_INVALID|ACCESS_TOKEN_TYPE_UNSUPPORTED|UNAUTHENTICATED/i.test(message);
+    || /API key not valid|API_KEY_INVALID|ACCESS_TOKEN_TYPE_UNSUPPORTED|UNAUTHENTICATED/i.test(message)
+    || (status === 400 && /(?:api[\s_-]*key|credential).*(?:invalid|not valid)|(?:invalid|not valid).*(?:api[\s_-]*key|credential)/i.test(message));
 }
 
 // ─── Middleware ───────────────────────────────────────────────────────────────

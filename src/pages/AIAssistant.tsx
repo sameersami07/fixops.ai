@@ -137,13 +137,13 @@ export default function AIAssistantPage() {
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: 'welcome', role: 'assistant', timestamp: new Date(),
-      content: "Hello! I'm the FixOps AI Maintenance Assistant powered by Google Gemini. Select equipment, describe the problem, and I'll provide expert diagnostic guidance.\n\n🔑 **API Key Setup**: Configure GEMINI_API_KEY in your backend environment to enable real AI responses.",
+      content: "Hello! I'm the FixOps AI Maintenance Assistant powered by Google Gemini. Select equipment, describe the problem, and I'll provide expert diagnostic guidance.",
     }
   ]);
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [problem, setProblem] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'configured' | 'demo-mode' | 'offline'>('checking');
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'configured' | 'verified' | 'invalid-key' | 'demo-mode' | 'offline'>('checking');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const QUICK_PROBLEMS = [
@@ -191,21 +191,26 @@ export default function AIAssistantPage() {
         parsedResponse: parsed || undefined,
         isDemo: result.isDemo,
       };
+      setBackendStatus(result.isDemo ? 'demo-mode' : 'verified');
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected request error occurred.';
-      const invalidGeminiKey = errorMessage.includes('GEMINI_API_KEY_INVALID')
+      const invalidGeminiKey = (err instanceof Error && 'code' in err && err.code === 'GEMINI_API_KEY_INVALID')
+        || errorMessage.includes('GEMINI_API_KEY_INVALID')
         || errorMessage.includes('Google rejected the Gemini API key');
+      if (invalidGeminiKey) setBackendStatus('invalid-key');
       const setupGuidance = invalidGeminiKey
         ? import.meta.env.DEV
-          ? 'Create a Gemini API key in Google AI Studio (not an OAuth/access token), update backend/.env, then restart the backend.'
+          ? ''
           : 'Create a Gemini API key in Google AI Studio (not an OAuth/access token), replace GEMINI_API_KEY in Vercel Project Settings, then redeploy.'
         : import.meta.env.DEV
         ? 'Make sure the backend server is running: cd backend && npm run dev'
         : 'Check GEMINI_API_KEY in Vercel Project Settings → Environment Variables, then redeploy.';
       const errorMsg: AIMessage = {
         id: `msg-${Date.now()}-err`, role: 'assistant', timestamp: new Date(),
-        content: `❌ Error: ${errorMessage}\n\n${setupGuidance}`,
+        content: setupGuidance
+          ? `❌ Error: ${errorMessage}\n\n${setupGuidance}`
+          : `❌ Error: ${errorMessage}`,
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -226,8 +231,8 @@ export default function AIAssistantPage() {
         subtitle="Powered by Google Gemini AI — Real-time equipment diagnostics"
         actions={
           <div className="flex items-center gap-2">
-            <span className={`badge ${backendStatus === 'configured' ? 'badge-green' : backendStatus === 'demo-mode' ? 'badge-yellow' : backendStatus === 'offline' ? 'badge-red' : 'badge-gray'}`}>
-              {backendStatus === 'configured' ? '🟢 Gemini AI Ready' : backendStatus === 'demo-mode' ? '🟡 Demo Mode — API key needed' : backendStatus === 'offline' ? '🔴 Backend Offline' : '⚪ Checking...'}
+            <span className={`badge ${backendStatus === 'verified' ? 'badge-green' : backendStatus === 'configured' || backendStatus === 'demo-mode' ? 'badge-yellow' : backendStatus === 'offline' || backendStatus === 'invalid-key' ? 'badge-red' : 'badge-gray'}`}>
+              {backendStatus === 'verified' ? '🟢 Gemini connected' : backendStatus === 'configured' ? '🟡 Gemini key set · not verified' : backendStatus === 'invalid-key' ? '🔴 Gemini key rejected' : backendStatus === 'demo-mode' ? '🟡 Demo Mode — API key needed' : backendStatus === 'offline' ? '🔴 Backend Offline' : '⚪ Checking...'}
             </span>
             <Button variant="ghost" size="sm" leftIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={handleClearChat}>Clear Chat</Button>
           </div>
@@ -274,12 +279,17 @@ export default function AIAssistantPage() {
             </div>
           </Card>
 
-          {/* API Key Guide */}
+          {/* Gemini status and setup */}
           <Card>
             <div className="flex items-center gap-2 mb-3">
-              <Key className="w-4 h-4 text-blue-500" />
-              <p className="text-xs font-semibold text-slate-700">Google Gemini API Setup</p>
+              <Key className={`w-4 h-4 ${backendStatus === 'verified' ? 'text-emerald-500' : 'text-blue-500'}`} />
+              <p className="text-xs font-semibold text-slate-700">{backendStatus === 'verified' ? 'Google Gemini Connected' : 'Google Gemini API Setup'}</p>
             </div>
+            {backendStatus === 'verified' ? (
+              <p className="text-xs text-emerald-700">A live Gemini diagnostic completed successfully.</p>
+            ) : backendStatus === 'configured' ? (
+              <p className="text-xs text-slate-600">The API key is set. Send a diagnostic to verify that Google accepts it.</p>
+            ) : (
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
@@ -308,6 +318,7 @@ export default function AIAssistantPage() {
                 <p className="text-[10px] text-blue-600">A Gemini API key is required for real AI responses.</p>
               </div>
             </div>
+            )}
           </Card>
 
           <Card>
@@ -406,7 +417,7 @@ export default function AIAssistantPage() {
             </div>
             <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
-              {backendStatus === 'configured' ? 'Gemini connected — Real AI active' : backendStatus === 'demo-mode' ? 'Demo mode — Configure GEMINI_API_KEY in your deployment environment' : backendStatus === 'offline' ? 'Backend offline — Check the API deployment and configuration' : 'Checking AI service status...'}
+              {backendStatus === 'verified' ? 'Gemini completed a real diagnostic successfully.' : backendStatus === 'configured' ? 'Gemini key is set; send a diagnostic to verify it.' : backendStatus === 'invalid-key' ? 'Google rejected the Gemini API key. Replace it with a valid Google AI Studio API key.' : backendStatus === 'demo-mode' ? 'Demo mode — Configure GEMINI_API_KEY in your deployment environment' : backendStatus === 'offline' ? 'Backend offline — Check the API deployment and configuration' : 'Checking AI service status...'}
             </p>
           </div>
         </Card>
