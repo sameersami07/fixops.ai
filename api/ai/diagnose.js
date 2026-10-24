@@ -63,9 +63,31 @@ Return only the JSON object without markdown.`;
     return response.status(200).json({ response: cleanText, isDemo: false });
   } catch (error) {
     const status = typeof error?.status === 'number' ? error.status : undefined;
-    console.error('Gemini diagnostic request failed.', status ? `Upstream status: ${status}` : '');
+    const message = typeof error?.message === 'string'
+      ? error.message
+        .split(apiKey).join('[REDACTED]')
+        .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]')
+        .replace(/AQ\.[0-9A-Za-z_-]{20,}/g, '[REDACTED]')
+      : 'Unknown upstream error';
+    console.error('Gemini diagnostic request failed.', { status, message });
+
+    if (status === 401 || status === 403) {
+      return response.status(502).json({
+        error: 'Google rejected the configured Gemini API key. Replace GEMINI_API_KEY in Vercel Project Settings and redeploy.',
+      });
+    }
+    if (status === 404) {
+      return response.status(502).json({
+        error: 'The configured Gemini model is unavailable to this API key. Check the model and API access in Google AI Studio.',
+      });
+    }
+    if (status === 429) {
+      return response.status(429).json({
+        error: 'Gemini quota or rate limit reached. Check the API project quota and billing, then try again.',
+      });
+    }
     return response.status(502).json({
-      error: 'Gemini could not complete the diagnostic. Check that the Vercel GEMINI_API_KEY is valid and try again.',
+      error: 'Gemini request failed. Check the Vercel function logs for the redacted upstream error details.',
     });
   }
 }
